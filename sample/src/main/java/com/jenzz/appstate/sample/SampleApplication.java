@@ -9,7 +9,8 @@ import com.jenzz.appstate.AppStateListener;
 import com.jenzz.appstate.AppStateMonitor;
 import com.jenzz.appstate.RxAppStateMonitor;
 
-import rx.functions.Action1;
+
+import io.reactivex.functions.Consumer;
 
 import static android.widget.Toast.LENGTH_LONG;
 import static com.jenzz.appstate.AppState.BACKGROUND;
@@ -26,9 +27,9 @@ public class SampleApplication extends Application {
     super.onCreate();
 
     // RX sample
-    RxAppStateMonitor.monitor(this).subscribe(new Action1<AppState>() {
+    RxAppStateMonitor.monitor(this).subscribe(new Consumer<AppState>() {
       @Override
-      public void call(AppState appState) {
+      public void accept(AppState appState) {
         // Hocus, Pocus, Abracadabra!
       }
     });

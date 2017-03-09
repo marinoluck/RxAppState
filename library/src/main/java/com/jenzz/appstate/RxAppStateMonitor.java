@@ -4,16 +4,17 @@ import android.app.Application;
 import android.support.annotation.NonNull;
 import android.support.annotation.RestrictTo;
 
-import com.jenzz.appstate.internal.AppStateEmitter;
 import com.jenzz.appstate.internal.AppStateRecognizer;
 import com.jenzz.appstate.internal.DefaultAppStateRecognizer;
 
-import rx.Observable;
+import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.ObservableOnSubscribe;
+import io.reactivex.functions.Cancellable;
 
 import static android.support.annotation.RestrictTo.Scope.TESTS;
 import static com.jenzz.appstate.AppState.BACKGROUND;
 import static com.jenzz.appstate.AppState.FOREGROUND;
-import static rx.Emitter.BackpressureMode.LATEST;
 
 /**
  * An app state monitor that keeps track of whenever the application
@@ -32,8 +33,37 @@ public final class RxAppStateMonitor implements AppStateMonitor {
    */
   @NonNull
   public static Observable<AppState> monitor(@NonNull Application app) {
-    return Observable.fromEmitter(new AppStateEmitter(new DefaultAppStateRecognizer(app)), LATEST);
+    final DefaultAppStateRecognizer recognizer = new DefaultAppStateRecognizer(app);
+    return Observable.create(
+            new ObservableOnSubscribe<AppState>() {
+              @Override
+              public void subscribe(final ObservableEmitter<AppState> e) throws Exception {
+                final AppStateListener appStateListener = new AppStateListener() {
+                  @Override
+                  public void onAppDidEnterForeground() {
+                    e.onNext(FOREGROUND);
+                  }
+
+                  @Override
+                  public void onAppDidEnterBackground() {
+                    e.onNext(BACKGROUND);
+                  }
+                };
+
+                recognizer.addListener(appStateListener);
+                recognizer.start();
+
+                e.setCancellable(new Cancellable() {
+                  @Override
+                  public void cancel() throws Exception {
+                    recognizer.removeListener(appStateListener);
+                    recognizer.stop();
+                  }
+                });
+              }
+            });
   }
+
 
     /**
      * Creates a new {@link RxAppStateMonitor} instance for the given {@link Application}.
