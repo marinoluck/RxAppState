@@ -13,7 +13,8 @@ import android.support.annotation.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 
-import rx.functions.Action1;
+
+import io.reactivex.functions.Consumer;
 
 import static android.content.Intent.ACTION_SCREEN_OFF;
 
@@ -21,10 +22,10 @@ import static android.content.Intent.ACTION_SCREEN_OFF;
 public class FakeApplication extends Application {
 
   public static final Intent SCREEN_OFF = new Intent(ACTION_SCREEN_OFF);
-  public static final Action1<Application.ActivityLifecycleCallbacks> ACTIVITY_STARTED =
-          new Action1<Application.ActivityLifecycleCallbacks>() {
+  public static final Consumer<ActivityLifecycleCallbacks> ACTIVITY_STARTED =
+          new Consumer<Application.ActivityLifecycleCallbacks>() {
             @Override
-            public void call(Application.ActivityLifecycleCallbacks activityLifecycleCallbacks) {
+            public void accept(Application.ActivityLifecycleCallbacks activityLifecycleCallbacks) {
               activityLifecycleCallbacks.onActivityStarted(new Activity());
             }
           };
@@ -76,9 +77,13 @@ public class FakeApplication extends Application {
     notifyReceivers(SCREEN_OFF);
   }
 
-  public void notifyActivityLifecycleCallbacks(@NonNull Action1<ActivityLifecycleCallbacks> action) {
+  public void notifyActivityLifecycleCallbacks(@NonNull Consumer<ActivityLifecycleCallbacks> action) {
     for (ActivityLifecycleCallbacks callback : activityLifecycleCallbacks) {
-      action.call(callback);
+      try {
+        action.accept(callback);
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
     }
   }
 
